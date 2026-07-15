@@ -17,6 +17,9 @@
 const STORE="client-dashboard-v4";
 const SUPABASE_CONFIG_STORE="htse-supabase-config";
 const SUPABASE_TABLE="htse_state";
+const DEFAULT_SUPABASE_URL="https://squpeezwzzseqvgsonyw.supabase.co";
+const DEFAULT_SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxdXBlZXp3enpzZXF2Z3Nvbnl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMzEzMTMsImV4cCI6MjA5OTcwNzMxM30.pWrNwiuq-8DHp2rZT8vJ-ZdufmR4KhTf2oc8NylgVJs";
+const DEFAULT_SUPABASE_WORKSPACE="htse-main";
 const PEOPLE=["DM","韓森","Zoe","Shawn","外包","客戶"];
 const CLIENT_STATUSES=["現正熱映","長期客戶","結案完工"];
 const DEAL_PLANS=["DIY","DWY","DFY"];
@@ -37,7 +40,7 @@ function makeClient(name,project,doneIndexes=[],owner="DM"){const id=uid();retur
 function loadState(){const saved=JSON.parse(localStorage.getItem(STORE)||"null");if(saved)return saved;const clients=[makeClient("小洋Freddy","補教培訓計畫",[0,1,2,3,4,5,7,8],"DM"),makeClient("陳醫師","醫美診所",[0,1,2],"韓森"),makeClient("Nicolle","知識變現直播陪跑",[0,14,15],"Zoe"),makeClient("子毅","再生醫療導流計畫",[],"DM")];clients[0].todos=[{id:uid(),text:"追蹤銷講稿修改方向",done:false,taskId:clients[0].tasks[3].id},{id:uid(),text:"整理客戶補交素材清單",done:false,taskId:null}];clients[0].tasks[3].pinned=true;clients[0].tasks[3].content="<h2>銷講稿資料</h2><details open><summary>重點</summary><div>主軸：補教老師的成交流程</div></details>";return{mode:"overview",activeId:clients[0].id,view:"overview",team:[{id:uid(),name:"韓森",role:"主理人",work:"策略、成交、銷講與交付把關"},{id:uid(),name:"DM",role:"幕後技術人員",work:"系統、頁面、預約流程與自動化"},{id:uid(),name:"Zoe",role:"廣告投手",work:"廣告設定、素材追蹤、數據回報"},{id:uid(),name:"外包",role:"剪輯 / 美編",work:"影片剪輯、後製、美編素材"}],clients}}
 function migrateState(){const oldLead="\u68ee\u54e5";if(state.team&&!state.team.some(m=>m.name==="Shawn"))state.team.push({id:uid(),name:"Shawn",role:"顧問 / 專案經理",work:"專案節奏、客戶溝通、里程碑推進"});state.team&&state.team.forEach(m=>{if(m.name===oldLead)m.name="韓森";if(m.name==="韓森"){m.role="主理人";m.work="策略、成交、銷講與交付把關"}if(m.name==="Zoe"){m.role="廣告投手";m.work="廣告設定、素材追蹤、數據回報"}if(m.name==="DM"){m.role="幕後技術人員";m.work="系統、頁面、預約流程與自動化"}});state.clients.forEach(c=>{if(!c.status)c.status="現正熱映";if(!c.dealDate)c.dealDate="";if(!c.dealPlan)c.dealPlan="DIY";if(!c.dealConsultant)c.dealConsultant="韓森";if(c.managerNote===undefined)c.managerNote="";if(c.owner===oldLead)c.owner="韓森";c.tasks&&c.tasks.forEach(t=>{if(t.owner===oldLead)t.owner="韓森"})});if(state.clientSectionOpen===undefined)state.clientSectionOpen=true;if(!state.statusOpen)state.statusOpen={"現正熱映":true,"長期客戶":true,"結案完工":true}}
 function save(){localStorage.setItem(STORE,JSON.stringify(state));scheduleCloudSave()}
-function syncConfig(){try{return JSON.parse(localStorage.getItem(SUPABASE_CONFIG_STORE)||"{}")}catch{return {}}}
+function syncConfig(){let saved={};try{saved=JSON.parse(localStorage.getItem(SUPABASE_CONFIG_STORE)||"{}")}catch{saved={}}return {url:saved.url||DEFAULT_SUPABASE_URL,key:saved.key||DEFAULT_SUPABASE_KEY,workspace:saved.workspace||DEFAULT_SUPABASE_WORKSPACE}}
 function syncWorkspace(){return syncConfig().workspace||"htse-main"}
 function setSyncStatus(text,type=""){const btn=el("syncBtn");if(!btn)return;btn.textContent=text;btn.className=type?`sync-${type}`:""}
 function initSupabase(){const cfg=syncConfig();if(!cfg.url||!cfg.key||!window.supabase){cloudReady=false;setSyncStatus("本機模式","warn");return false}supabaseClient=window.supabase.createClient(cfg.url,cfg.key);cloudReady=true;setSyncStatus("雲端連線中","warn");return true}
@@ -143,6 +146,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 

@@ -1,0 +1,32 @@
+﻿<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTSE 專案進度</title>
+<style>
+:root{--bg:#eef7ff;--ink:#102033;--muted:#52657a;--line:#cbd8e5;--panel:#ffffff;--blue:#146ecb;--green:#2d8a57}*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;margin:0}.wrap{margin:0 auto;max-width:980px;padding:28px 18px}.brand{align-items:center;display:flex;gap:12px;margin-bottom:22px}.brand img{border-radius:10px;height:46px;width:46px}.brand strong{display:block;font-size:20px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 44px rgba(24,48,80,.08);padding:22px}.muted{color:var(--muted)}.progress{background:#dfeaf5;border-radius:999px;height:10px;margin:18px 0;overflow:hidden}.bar{background:linear-gradient(90deg,#146ecb,#2d8a57);height:100%}.task-list{display:grid;gap:10px;margin-top:16px}.task{border:1px solid var(--line);border-radius:10px;padding:13px}.content{border-top:1px solid var(--line);line-height:1.75;margin-top:18px;padding-top:18px}.content img{max-width:100%}.empty{border:1px dashed var(--line);border-radius:10px;color:var(--muted);padding:18px;text-align:center}a{color:var(--blue);font-weight:800;text-decoration:none}h1{font-size:28px;margin:0 0 8px}h2{font-size:22px;margin:0 0 10px}@media(max-width:680px){.wrap{padding:18px 12px}.panel{padding:16px}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="brand"><img src="assets/htse-logo.png" alt="HTSE"><div><strong>HTSE 專案進度</strong><span class="muted">客戶公開頁</span></div></div><main class="panel" id="app"><div class="empty">正在載入公開資料...</div></main></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL="https://squpeezwzzseqvgsonyw.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxdXBlZXp3enpzZXF2Z3Nvbnl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMzEzMTMsImV4cCI6MjA5OTcwNzMxM30.pWrNwiuq-8DHp2rZT8vJ-ZdufmR4KhTf2oc8NylgVJs";
+const WORKSPACE="htse-main";
+const TABLE="htse_state";
+const app=document.getElementById("app");
+const params=new URLSearchParams(location.search);
+const code=params.get("c")||params.get("public");
+const taskId=params.get("t")||params.get("task");
+function esc(text){return String(text||"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]))}
+function progress(client){const done=client.tasks.filter(t=>t.done).length;return{done,total:client.tasks.length,percent:Math.round(done/client.tasks.length*100)}}
+function publicUrl(client,task=null){return `${location.origin}${location.pathname}?c=${client.publicCode}${task?`&t=${task.id}`:""}`}
+function renderClient(client){const p=progress(client);const open=client.tasks.filter(t=>t.published||!t.done).slice(0,6);app.innerHTML=`<h1>${esc(client.name)}｜${esc(client.project)}</h1><p class="muted">完成率 ${p.percent}% · 已完成 ${p.done}/${p.total}</p><div class="progress"><div class="bar" style="width:${p.percent}%"></div></div><h2>目前進行中</h2><div class="task-list">${open.length?open.map(t=>`<div class="task"><a href="${publicUrl(client,t)}">${esc(t.title)}</a><div class="muted">${t.due?`日期 ${esc(t.due)} · `:""}${esc(t.owner||"")}${t.published?" · 已發布":""}</div></div>`).join(""):`<div class="empty">目前沒有公開項目</div>`}</div>`}
+function renderTask(client,task){const safeContent=task.content||"<p>這個項目尚未填寫公開內容。</p>";app.innerHTML=`<h1>${esc(task.title)}</h1><p class="muted">${esc(client.name)}｜${esc(client.project)}${task.due?` · ${esc(task.due)}`:""}</p><div class="content">${safeContent}</div><p style="margin-top:20px"><a href="${publicUrl(client)}">回到專案進度</a></p>`}
+async function init(){try{if(!code){app.innerHTML='<div class="empty">這個公開頁網址不完整。</div>';return}const client=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const {data,error}=await client.from(TABLE).select("data").eq("id",WORKSPACE).maybeSingle();if(error)throw error;const state=data&&data.data;if(!state){app.innerHTML='<div class="empty">公開資料尚未建立。</div>';return}const target=state.clients.find(c=>c.publicCode===code);if(!target){app.innerHTML='<div class="empty">找不到這個客戶公開頁。</div>';return}const task=taskId?target.tasks.find(t=>t.id===taskId):null;if(task)renderTask(target,task);else renderClient(target)}catch(err){console.error(err);app.innerHTML=`<div class="empty">公開頁載入失敗：${esc(err.message||err)}</div>`}}
+init();
+</script>
+</body>
+</html>

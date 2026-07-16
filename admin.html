@@ -55,7 +55,8 @@ function closeSyncModal(){el("syncModal").classList.remove("open")}
 async function saveSyncSettings(){const cfg={url:el("syncUrl").value.trim(),key:el("syncKey").value.trim(),workspace:el("syncWorkspace").value.trim()||"htse-main"};localStorage.setItem(SUPABASE_CONFIG_STORE,JSON.stringify(cfg));closeSyncModal();await loadCloudState();render()}
 async function pullCloudState(){closeSyncModal();await loadCloudState();render()}
 async function pushCurrentState(){const cfg={url:el("syncUrl").value.trim(),key:el("syncKey").value.trim(),workspace:el("syncWorkspace").value.trim()||"htse-main"};if(cfg.url&&cfg.key)localStorage.setItem(SUPABASE_CONFIG_STORE,JSON.stringify(cfg));initSupabase();await pushCloudState(true);closeSyncModal()}
-async function initApp(){await loadCloudState();render()}
+function applyRouteParams(){const params=new URLSearchParams(location.search);const view=params.get("view")||params.get("page");if(view==="calendar"||view==="team-calendar"){state.mode="overview";state.view="calendar"}}
+async function initApp(){await loadCloudState();applyRouteParams();render()}
 function activeClient(){return state.clients.find(c=>c.id===state.activeId)||state.clients[0]}
 function progress(client){const done=client.tasks.filter(t=>t.done).length;return{done,total:client.tasks.length,open:client.tasks.length-done,percent:Math.round(done/client.tasks.length*100)}}
 function nextTask(client){return client.tasks.find(t=>!t.done)||null}
@@ -171,6 +172,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
